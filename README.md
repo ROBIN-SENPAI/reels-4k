@@ -1,7 +1,9 @@
+<p align="center"><img src="brand/logo-512.png" width="120" alt="Reels4K logo"></p>
+
 # Reels4K
 
 Turn a TikTok / Instagram video into a cleaner, sharper **4K** file. Runs 100% on your PC with
-[FFmpeg](https://ffmpeg.org) — nothing is uploaded anywhere. Drag-and-drop web UI, or command line.
+[FFmpeg](https://ffmpeg.org) — nothing is uploaded anywhere. Desktop-style app (library, 100% compare view, settings panel) or command line.
 Uses your GPU's hardware video encoder when it works (Intel Quick Sync, NVIDIA NVENC, AMD AMF).
 
 By **ROBIN ABU IBRAHIM** (https://t.me/xFFBI) &mdash; **SENPAI ACADEMY** (https://t.me/xROB1N).
@@ -9,17 +11,24 @@ By **ROBIN ABU IBRAHIM** (https://t.me/xFFBI) &mdash; **SENPAI ACADEMY** (https:
 ## Download (Windows)
 `Reels4K-windows-x64.zip` → `Reels4K.exe` (single file, no Node needed). FFmpeg is **not** bundled:
 put `ffmpeg.exe` + `ffprobe.exe` next to the exe, or install them (`winget install Gyan.FFmpeg`).
-Double-click the exe → the app opens in your browser. The exe is not code-signed, so Windows SmartScreen may warn.
+Double-click the exe → the app opens in its own window (Edge/Chrome app mode, no tabs) and closes itself a few minutes after you close that window. The exe is not code-signed, so Windows SmartScreen may warn.
 
 ## From source
 Node.js 18+ and FFmpeg on `PATH`; no npm packages.
 ```bash
-node main.mjs                      # web app at http://localhost:4400  (Windows: start.bat)
+node main.mjs                      # app window (server at http://localhost:4400)  (Windows: start.bat)
 node main.mjs video.mp4            # command line
+node --test test/                  # tests (needs ffmpeg)
 node build-exe.mjs                 # builds dist/Reels4K.exe (needs Node 25.5+ for --build-sea)
 ```
 CLI options: `[out.mp4] [--strength soft|normal|strong] [--speed turbo|balanced|max] [--no-gpu] [--force]`.
 Output defaults to `<name>-4k.mp4` next to the input; the input is never overwritten.
+
+## Using the app
+- **Library** (left): add videos with the button, `Ctrl+O` or drag & drop; several videos can be queued (`Upscale all`).
+- **Frame / Compare 100%** (centre): after processing, drag the slider to compare a 100% crop of plain bicubic upscaling vs the Reels4K result.
+- **Settings** (right): sharpness and encoding mode (remembered between launches). `Enter` = upscale, `Delete` = remove.
+- Brand assets (SVG/PNG logo) are in `brand/`.
 
 ## What it does
 | Input | Output |
@@ -79,4 +88,4 @@ removing it. Use the exe release if you want maximum protection.
 - The mark can cover small things in the top-left corner of the picture.
 - Tested with synthetic and rendered clips (portrait/landscape/4:5, HDR-tagged, with/without audio), not real phone footage.
 
-The web server listens on `127.0.0.1` only. See `LICENSE`.
+Security of the local server: listens on `127.0.0.1` only, checks the Host header and cross-site requests, sends a strict Content-Security-Policy, and every API call needs a random per-launch token. See `LICENSE`.

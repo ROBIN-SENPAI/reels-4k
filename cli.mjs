@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { upscale, STRENGTHS, SPEEDS } from './lib/upscale.mjs';
 import { detectEncoders, checkFfmpeg } from './lib/accel.mjs';
-import { getCredit, APP_NAME, assertCredit } from './lib/credit.mjs';
+import { getCredit, APP_NAME, VERSION, assertCredit } from './lib/credit.mjs';
 
 const USAGE = 'Usage: reels4k <video> [out.mp4] [--strength soft|normal|strong] [--speed turbo|balanced|max] [--no-gpu] [--force]';
 
@@ -17,6 +17,8 @@ export async function runCli(args) {
     const a = args[i];
     if (a === '--strength') opts.strength = args[++i];
     else if (a === '--speed') opts.speed = args[++i];
+    else if (a === '--version' || a === '-v') { console.log(`${APP_NAME} ${VERSION}`); return; }
+    else if (a === '--help' || a === '-h') { console.log(USAGE); return; }
     else if (a === '--force') force = true;
     else if (a === '--no-gpu') gpu = false;
     else if (a.startsWith('-')) fail(`Unknown option ${a}\n${USAGE}`);

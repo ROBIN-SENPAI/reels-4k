@@ -1,10 +1,10 @@
 {
   "name": "reels-4k",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Upscale TikTok/Instagram videos to 4K locally with ffmpeg (web UI + CLI)",
   "type": "module",
   "license": "SEE LICENSE IN LICENSE",
-  "scripts": { "start": "node main.mjs", "build:exe": "node build-exe.mjs" },
+  "scripts": { "start": "node main.mjs", "build:exe": "node build-exe.mjs", "test": "node --test test/" },
   "bin": { "reels-4k": "main.mjs" },
   "engines": { "node": ">=18" }
 }

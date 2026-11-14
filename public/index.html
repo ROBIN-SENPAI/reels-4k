@@ -3,131 +3,321 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{{APP}} - 4K video upscaler</title>
+<meta name="color-scheme" content="dark light">
+<title>{{APP}}</title>
+<link rel="icon" type="image/svg+xml" href="/logo.svg">
 <style>
-  :root { --black:#0a0a0a; --ink:#111; --white:#fff; --grey:#6b6b6b; --line:#e4e4e4; --orange:#ff6a00; --orange-d:#e05a00; }
+  /* Desktop-tool layout: library | stage | inspector | status bar. Flat surfaces, system font, orange only as an accent. */
+  :root {
+    --bg:#131315; --panel:#19191c; --raise:#222226; --stage:#0d0d0f; --line:#2b2b30; --line2:#3a3a41;
+    --text:#e9e9ec; --muted:#9696a0; --faint:#6b6b75;
+    --acc:#ff6a00; --acc-h:#ff7f26; --acc-d:#c85200; --acc-bg:rgba(255,106,0,.13); --ok:#e9e9ec; --err:#ff7a59;
+    --font:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f1f1f3; --panel:#ffffff; --raise:#f3f3f5; --stage:#e4e4e8; --line:#dcdce1; --line2:#c4c4cb;
+      --text:#17171a; --muted:#5f5f69; --faint:#8b8b95; --acc-bg:rgba(255,106,0,.12); --ok:#17171a; --err:#c2400f; }
+  }
   * { box-sizing:border-box }
-  body { margin:0; background:var(--black); color:var(--white); font:16px/1.55 "Segoe UI",system-ui,Arial,sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:28px 16px 20px }
-  header { width:100%; max-width:600px; margin-bottom:22px }
-  h1 { margin:0; font-size:34px; letter-spacing:-.5px; font-weight:800 }
-  h1 span { color:var(--orange) }
-  .sub { margin:4px 0 0; color:#bdbdbd }
-  .card { width:100%; max-width:600px; background:var(--white); color:var(--ink); border-radius:18px; padding:22px; border-top:6px solid var(--orange) }
-  #drop { border:2px dashed #bbb; border-radius:14px; padding:44px 16px; text-align:center; cursor:pointer; transition:.15s; background:#fafafa }
-  #drop:hover, #drop.over { border-color:var(--orange); background:#fff4ec }
-  #drop b { display:block; font-size:19px; margin-bottom:2px }
-  #drop small { color:var(--grey) }
-  .row { display:flex; gap:12px; margin-top:16px; flex-wrap:wrap }
-  .row label { flex:1; min-width:170px; font-size:13px; font-weight:600; color:var(--grey); text-transform:uppercase; letter-spacing:.5px }
-  select { width:100%; margin-top:5px; padding:11px; border-radius:10px; border:1.5px solid #cfcfcf; background:#fff; color:var(--ink); font:inherit; font-size:15px; text-transform:none; letter-spacing:0; font-weight:500 }
-  select:focus { outline:2px solid var(--orange); border-color:var(--orange) }
-  button { width:100%; margin-top:16px; padding:14px; border:0; border-radius:12px; font:inherit; font-weight:700; font-size:16px; color:#fff; background:var(--orange); cursor:pointer }
-  button:hover { background:var(--orange-d) }
-  button.sec { background:#fff; color:var(--ink); border:1.5px solid #cfcfcf }
-  button.sec:hover { background:#f2f2f2 }
-  button:disabled { opacity:.45; cursor:default }
-  .info { margin-top:14px; font-weight:600; text-align:center; font-size:15px }
-  .info em { color:var(--orange); font-style:normal }
-  .chip { display:inline-block; margin-top:10px; padding:3px 10px; border-radius:99px; background:#111; color:#fff; font-size:12px }
-  .chip b { color:var(--orange) }
-  .bar { height:12px; background:#eee; border-radius:99px; overflow:hidden; margin-top:6px }
-  .bar i { display:block; height:100%; width:0; background:var(--orange); transition:width .4s }
-  .msg { margin-top:12px; font-size:14px; color:#333 } .err { color:#c0392b; font-weight:600 } .ok { color:#111; font-weight:700 }
-  .note { margin:18px 0 0; max-width:600px; font-size:13px; color:#a5a5a5 }
-  footer { margin-top:auto; padding-top:26px; font-size:12px; letter-spacing:1.5px; color:#8a8a8a; text-align:center }
-  footer a { color:inherit; text-decoration:none } footer b { color:var(--orange) } footer span { opacity:.8 } footer a:hover b { text-decoration:underline }
+  html,body { height:100%; margin:0; overflow:hidden }
+  body { font:13px/1.45 var(--font); color:var(--text); background:var(--bg); user-select:none; -webkit-font-smoothing:antialiased }
+  button { font:inherit; color:inherit; cursor:pointer }
+  .app { display:grid; grid-template-rows:44px 1fr 28px; height:100vh }
+
+  /* title bar */
+  .bar { display:flex; align-items:center; gap:14px; padding:0 12px; background:var(--panel); border-bottom:1px solid var(--line) }
+  .brand { display:flex; align-items:center; gap:9px; font-weight:650; font-size:14px; letter-spacing:.01em }
+  .mark { width:24px; height:24px; display:block }
+  .brand small { color:var(--faint); font-weight:500; font-size:12px }
+  .tb { padding:6px 12px; border-radius:5px; border:1px solid var(--line2); background:var(--raise); font-weight:550 }
+  .tb:hover { border-color:var(--acc) }
+  .tb.pri { background:var(--acc); border-color:var(--acc); color:#fff }
+  .tb.pri:hover { background:var(--acc-h) }
+  .sp { flex:1 }
+  .gpu { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:12px }
+  .gpu i { width:7px; height:7px; border-radius:50%; background:var(--faint) } .gpu.on i { background:var(--acc) } .gpu b { color:var(--text); font-weight:600 }
+
+  .body { display:grid; grid-template-columns:268px 1fr 304px; min-height:0 }
+  .pane { min-height:0; display:flex; flex-direction:column; background:var(--panel) }
+  .lib { border-right:1px solid var(--line) } .insp { border-left:1px solid var(--line) }
+  .ph { display:flex; align-items:center; justify-content:space-between; height:34px; padding:0 12px; border-bottom:1px solid var(--line);
+    font-size:11px; font-weight:650; letter-spacing:.09em; text-transform:uppercase; color:var(--faint) }
+  .scroll { flex:1; overflow:auto; min-height:0 }
+  ::-webkit-scrollbar { width:10px } ::-webkit-scrollbar-thumb { background:var(--line2); border-radius:5px; border:2px solid var(--panel) }
+
+  /* library list */
+  .item { display:grid; grid-template-columns:52px 1fr; gap:10px; padding:9px 12px; border-bottom:1px solid var(--line); cursor:pointer; position:relative }
+  .item:hover { background:var(--raise) }
+  .item.sel { background:var(--acc-bg) } .item.sel::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--acc) }
+  .th { width:52px; height:52px; border-radius:4px; background:var(--stage); overflow:hidden; display:grid; place-items:center; color:var(--faint); font-size:10px }
+  .th img { width:100%; height:100%; object-fit:cover }
+  .nm { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .mt { color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .st { font-size:12px; margin-top:2px } .st.run { color:var(--acc) } .st.err { color:var(--err) } .st.done { color:var(--text); font-weight:600 }
+  .mini { height:3px; border-radius:2px; background:var(--line); margin-top:5px; overflow:hidden } .mini i { display:block; height:100%; width:0; background:var(--acc); transition:width .4s }
+  .none { padding:22px 16px; color:var(--faint); text-align:center }
+
+  /* stage */
+  .stage { background:var(--stage); display:flex; flex-direction:column; min-width:0; min-height:0; position:relative }
+  .tabs { display:flex; gap:2px; height:34px; padding:0 8px; align-items:flex-end; background:var(--panel); border-bottom:1px solid var(--line) }
+  .tab { padding:7px 14px; border:0; background:none; color:var(--muted); font-weight:600; border-bottom:2px solid transparent }
+  .tab:hover { color:var(--text) } .tab.on { color:var(--text); border-bottom-color:var(--acc) } .tab:disabled { opacity:.4; cursor:default }
+  .view { flex:1; min-height:0; display:grid; place-items:center; padding:18px; overflow:hidden }
+  .view img { max-width:100%; max-height:100%; display:block; border-radius:2px; box-shadow:0 8px 30px rgba(0,0,0,.35) }
+  .cmp { position:relative; max-width:100%; max-height:100%; line-height:0; cursor:ew-resize; touch-action:none }
+  .cmp img { box-shadow:none; border-radius:0 }
+  .cmp .top { position:absolute; inset:0; width:100%; height:100%; object-fit:contain }
+  .cmp .ln { position:absolute; top:0; bottom:0; width:2px; background:#fff; box-shadow:0 0 0 1px rgba(0,0,0,.4); pointer-events:none }
+  .cmp .kn { position:absolute; top:50%; width:26px; height:26px; margin:-13px 0 0 -13px; border-radius:50%; background:#fff; color:#111; display:grid; place-items:center; font-size:12px; font-weight:800; box-shadow:0 2px 8px rgba(0,0,0,.5); pointer-events:none }
+  .lab { position:absolute; bottom:8px; padding:3px 8px; border-radius:3px; background:rgba(0,0,0,.72); color:#fff; font-size:11.5px; font-weight:600; line-height:1.3; pointer-events:none }
+  .lab.r { right:8px; background:var(--acc) } .lab.l { left:8px }
+  .infobar { display:flex; align-items:center; gap:10px; min-height:40px; padding:6px 14px; background:var(--panel); border-top:1px solid var(--line); color:var(--muted); font-size:12px }
+  .infobar b { color:var(--text); font-weight:600 } .infobar .sp { flex:1 }
+  .empty { text-align:center; color:var(--muted); max-width:340px }
+  .empty .box { border:1.5px dashed var(--line2); border-radius:10px; padding:34px 22px; transition:.15s }
+  .empty.over .box { border-color:var(--acc); background:var(--acc-bg) }
+  .empty h2 { margin:0 0 4px; font-size:16px; color:var(--text); font-weight:650 } .empty p { margin:0 0 16px }
+  .empty small { display:block; margin-top:14px; color:var(--faint) }
+  .busy-t { color:var(--muted) }
+
+  /* inspector */
+  .sec { padding:12px 14px 14px; border-bottom:1px solid var(--line) }
+  .sec h3 { margin:0 0 9px; font-size:11px; font-weight:650; letter-spacing:.09em; text-transform:uppercase; color:var(--faint) }
+  .kv { display:flex; justify-content:space-between; gap:10px; padding:3px 0 } .kv span { color:var(--muted) } .kv b { font-weight:600; font-variant-numeric:tabular-nums; text-align:right }
+  .kv b.acc { color:var(--acc) }
+  .seg { display:flex; border:1px solid var(--line2); border-radius:6px; overflow:hidden }
+  .seg input { position:absolute; opacity:0; pointer-events:none }
+  .seg label { flex:1; text-align:center; padding:6px 4px; cursor:pointer; color:var(--muted); font-weight:600; border-right:1px solid var(--line2) }
+  .seg label:last-of-type { border-right:0 } .seg label:hover { color:var(--text) }
+  .seg input:checked + label { background:var(--acc); color:#fff }
+  .seg input:focus-visible + label { outline:2px solid var(--acc); outline-offset:-2px }
+  .opt { display:flex; gap:9px; padding:8px 9px; border:1px solid var(--line); border-radius:6px; margin-bottom:6px; cursor:pointer }
+  .opt:hover { border-color:var(--line2) } .opt:has(input:checked) { border-color:var(--acc); background:var(--acc-bg) }
+  .opt input { accent-color:var(--acc); margin:3px 0 0 }
+  .opt b { display:block; font-weight:600 } .opt small { color:var(--muted); font-size:12px }
+  .note { color:var(--faint); font-size:12px; line-height:1.5 }
+  .foot { padding:12px 14px; border-top:1px solid var(--line); background:var(--panel) }
+  .go { width:100%; padding:9px; border:0; border-radius:6px; background:var(--acc); color:#fff; font-weight:650; font-size:13.5px }
+  .go:hover { background:var(--acc-h) } .go:disabled { background:var(--raise); color:var(--faint); cursor:default }
+  .go2 { width:100%; margin-top:7px; padding:8px; border:1px solid var(--line2); border-radius:6px; background:none; font-weight:600 }
+  .go2:hover { border-color:var(--acc) } .go2:disabled { opacity:.4; cursor:default }
+
+  /* status bar */
+  .status { display:flex; align-items:center; gap:14px; padding:0 12px; background:var(--panel); border-top:1px solid var(--line); font-size:12px; color:var(--muted) }
+  .status .sp { flex:1 }
+  .status a { color:var(--muted); text-decoration:none } .status a:hover { color:var(--acc) } .status b { color:var(--text); font-weight:650 }
+  .status i { display:inline-block; width:1px; height:11px; background:var(--line2); margin:0 10px; vertical-align:-1px }
+  .status .pb { width:140px; height:4px; background:var(--line); border-radius:2px; overflow:hidden } .status .pb i { display:block; width:0; height:100%; margin:0; background:var(--acc); transition:width .4s }
+  .toast { position:absolute; left:50%; top:12px; transform:translateX(-50%); max-width:80%; padding:8px 14px; border-radius:6px; background:var(--panel); border:1px solid var(--err); color:var(--err); font-weight:600; z-index:5 }
   [hidden] { display:none !important }
+  @media (max-width:900px) { .body { grid-template-columns:200px 1fr 250px } }
 </style>
 </head>
 <body>
-<header>
-  <h1>Reels<span>4K</span></h1>
-  <p class="sub">Drop a TikTok or Instagram video. Get a cleaner, sharper 4K version. Runs 100% on your PC.</p>
-</header>
-<main class="card">
-  <div id="drop" tabindex="0"><b>Drop your video here</b><small>or click to choose (MP4, MOV, ...)</small>
-    <input id="file" type="file" accept="video/*" hidden></div>
-  <div id="chip" class="chip" hidden></div>
-  <div id="opts" hidden>
-    <div class="info" id="info"></div>
-    <div class="row">
-      <label>Sharpness<select id="strength"><option value="soft">Soft</option><option value="normal" selected>Normal</option><option value="strong">Strong</option></select></label>
-      <label>Speed<select id="speed"><option value="turbo" selected>Turbo (GPU encoder)</option><option value="balanced">Balanced</option><option value="max">Max quality (slowest)</option></select></label>
-    </div>
-    <button id="go">Upscale to 4K</button>
-    <button id="reset" class="sec">Choose another video</button>
+<div class="app">
+  <div class="bar">
+    <div class="brand"><img class="mark" src="/logo.svg" alt="">Reels4K <small>video upscaler</small></div>
+    <button class="tb pri" id="add" title="Ctrl+O">Add videos</button>
+    <div class="sp"></div>
+    <div class="gpu" id="gpu"><i></i><span id="gput">Checking encoder...</span></div>
   </div>
-  <div id="prog" hidden>
-    <div class="msg" id="pmsg">Starting...</div>
-    <div class="bar"><i id="fill"></i></div>
-    <button id="cancel" class="sec">Cancel</button>
+
+  <div class="body">
+    <aside class="pane lib">
+      <div class="ph"><span>Library</span><span id="count">0</span></div>
+      <div class="scroll" id="list"></div>
+    </aside>
+
+    <section class="stage" id="stage">
+      <div class="tabs"><button class="tab on" id="tFrame">Frame</button><button class="tab" id="tCmp" disabled>Compare 100%</button></div>
+      <div class="view" id="view"></div>
+      <div class="infobar" id="infobar"></div>
+    </section>
+
+    <aside class="pane insp">
+      <div class="ph"><span>Settings</span></div>
+      <div class="scroll">
+        <div class="sec"><h3>Output</h3>
+          <div class="kv"><span>Source</span><b id="kSrc">-</b></div>
+          <div class="kv"><span>Output</span><b class="acc" id="kOut">-</b></div>
+          <div class="kv"><span>Frame rate</span><b id="kFps">-</b></div>
+          <div class="kv"><span>Format</span><b>MP4 &middot; H.264</b></div>
+        </div>
+        <div class="sec"><h3>Sharpness</h3>
+          <div class="seg">
+            <input type="radio" name="strength" id="s1" value="soft"><label for="s1">Soft</label>
+            <input type="radio" name="strength" id="s2" value="normal" checked><label for="s2">Normal</label>
+            <input type="radio" name="strength" id="s3" value="strong"><label for="s3">Strong</label>
+          </div>
+        </div>
+        <div class="sec"><h3>Encoding</h3>
+          <label class="opt"><input type="radio" name="speed" value="turbo" checked><span><b>Turbo</b><small id="turboDesc">GPU encoder when available</small></span></label>
+          <label class="opt"><input type="radio" name="speed" value="balanced"><span><b>Balanced</b><small>CPU, smaller files</small></span></label>
+          <label class="opt"><input type="radio" name="speed" value="max"><span><b>Max quality</b><small>CPU, slowest, best per MB</small></span></label>
+        </div>
+        <div class="sec"><p class="note">Upscaling cannot add detail that was never recorded: it gives smoother edges and crisper lines. A copyright mark is added to every output video.</p></div>
+      </div>
+      <div class="foot">
+        <button class="go" id="go" disabled>Upscale selected</button>
+        <button class="go2" id="goAll" disabled>Upscale all</button>
+      </div>
+    </aside>
   </div>
-  <div id="result" hidden>
-    <div class="msg ok" id="rmsg"></div>
-    <a id="dl"><button>Download 4K video</button></a>
-    <button id="again" class="sec">Upscale another video</button>
+
+  <div class="status">
+    <span id="stxt">Ready</span><div class="pb" id="spb" hidden><i id="spi"></i></div>
+    <div class="sp"></div><div>v{{VERSION}}<i></i>&copy; {{FOOTER}}</div>
   </div>
-  <div class="msg err" id="err" hidden></div>
-</main>
-<p class="note">Honest note: upscaling cannot add detail that was never recorded. You get smoother edges, crisper lines and a file that survives TikTok/Instagram re-compression better. A small copyright mark is added to every output video.</p>
-<footer>{{FOOTER}}</footer>
+</div>
+<input id="file" type="file" accept="video/*" multiple hidden>
 <script>
+const T = '{{TOKEN}}';
 const $ = (id) => document.getElementById(id);
-let jobId = null, timer = null;
-const show = (...ids) => ['drop','opts','prog','result'].forEach((x) => $(x).hidden = !ids.includes(x));
-const fail = (m) => { $('err').textContent = m; $('err').hidden = false; };
-const fmt = (s) => s >= 60 ? `${Math.floor(s/60)} min ${Math.round(s%60)} s` : `${Math.round(s)} s`;
+const api = (p, o = {}) => fetch(p, { ...o, headers: { ...(o.headers || {}), 'x-token': T } });
+const img = (it, which, mode) => `/api/frame?id=${it.id}&which=${which}&mode=${mode}&t=${T}&v=${it.ver || 0}`;
+const fmt = (s) => s >= 60 ? `${Math.floor(s / 60)} min ${Math.round(s % 60)} s` : `${Math.round(s)} s`;
+const val = (n) => document.querySelector(`input[name=${n}]:checked`).value;
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-fetch('/api/caps').then((r) => r.json()).then((c) => {
-  if (!c.ffmpeg) fail('ffmpeg was not found. Put ffmpeg.exe and ffprobe.exe next to this program or install them.');
-  $('chip').innerHTML = c.gpu.length ? `GPU acceleration: <b>${c.gpu[0]}</b>` : 'No GPU encoder found: Turbo uses the CPU';
-  $('chip').hidden = false;
+let items = [], sel = null, queue = [], running = null, gpu = null, tab = 'frame', pct = 50, toastT = null;
+
+function toast(m) { let t = document.querySelector('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; $('stage').appendChild(t); } t.textContent = m; clearTimeout(toastT); toastT = setTimeout(() => t.remove(), 5000); }
+
+api('/api/caps').then((r) => r.json()).then((c) => {
+  gpu = c.gpu[0] || null;
+  $('gpu').classList.toggle('on', !!gpu); $('gput').innerHTML = gpu ? `Encoder: <b>${esc(gpu)}</b>` : 'Encoder: <b>CPU</b>';
+  $('turboDesc').textContent = gpu ? `GPU encoder (${gpu})` : 'No GPU encoder found: uses the CPU';
+  if (!c.ffmpeg) toast('ffmpeg was not found. Put ffmpeg.exe and ffprobe.exe next to this program or install them.');
 });
-$('drop').onclick = () => $('file').click();
-$('drop').onkeydown = (e) => { if (e.key === 'Enter') $('file').click(); };
-$('file').onchange = () => $('file').files[0] && upload($('file').files[0]);
-['dragover','dragenter'].forEach((t) => $('drop').addEventListener(t, (e) => { e.preventDefault(); $('drop').classList.add('over'); }));
-['dragleave','drop'].forEach((t) => $('drop').addEventListener(t, (e) => { e.preventDefault(); $('drop').classList.remove('over'); }));
-$('drop').addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f) upload(f); });
 
-async function upload(f) {
-  $('err').hidden = true; $('drop').querySelector('b').textContent = 'Uploading...';
-  try {
-    const r = await fetch('/api/upload?name=' + encodeURIComponent(f.name), { method: 'PUT', body: f });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error);
-    jobId = d.id;
-    const i = d.info;
-    $('info').innerHTML = `${i.width}&times;${i.height} @ ${i.fps.toFixed(0)} fps &rarr; <em>${d.target.width}&times;${d.target.height}</em>` + (i.hdr ? ' (HDR to SDR)' : '');
-    $('go').disabled = d.tooBig;
-    if (d.tooBig) fail('This video is already very high resolution. Nothing to upscale.');
-    show('opts');
-  } catch (e) { fail(e.message); }
-  $('drop').querySelector('b').textContent = 'Drop your video here';
+/* ---- adding files ---- */
+async function addFiles(files) {
+  for (const f of files) {
+    if (!f.type.startsWith('video/') && !/\.(mp4|mov|m4v|mkv|webm|avi)$/i.test(f.name)) { toast(`${f.name}: not a video file`); continue; }
+    const it = { key: Math.random().toString(36).slice(2), name: f.name, state: 'uploading', progress: 0 };
+    items.push(it); sel = it; render();
+    try {
+      const r = await api('/api/upload?name=' + encodeURIComponent(f.name), { method: 'PUT', body: f });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      Object.assign(it, { id: d.id, info: d.info, target: d.target, state: d.tooBig ? 'error' : 'ready', msg: d.tooBig ? 'Already very high resolution' : '' });
+    } catch (e) { it.state = 'error'; it.msg = e.message; toast(`${f.name}: ${e.message}`); }
+    render();
+  }
 }
-$('go').onclick = async () => {
-  $('err').hidden = true;
-  const r = await fetch(`/api/start?id=${jobId}&strength=${$('strength').value}&speed=${$('speed').value}`, { method: 'POST' });
-  if (!r.ok) return fail((await r.json()).error);
-  show('prog'); poll();
-};
-function poll() {
-  clearInterval(timer);
-  timer = setInterval(async () => {
-    const d = await (await fetch('/api/job?id=' + jobId)).json();
-    $('fill').style.width = (d.progress * 100).toFixed(1) + '%';
-    $('pmsg').textContent = `${(d.progress * 100).toFixed(0)}%` + (d.encoder ? ` - ${d.encoder}` : '') + (d.eta ? ` - about ${fmt(d.eta)} left` : '');
-    if (d.state === 'done') {
-      clearInterval(timer);
-      $('rmsg').textContent = `Done! ${d.result.width}x${d.result.height} - ${(d.result.size/1048576).toFixed(1)} MB - took ${fmt(d.secs)}`;
-      $('dl').href = '/api/download?id=' + jobId; show('result');
-    } else if (d.state === 'error' || d.state === 'cancelled') { clearInterval(timer); fail(d.error); show('opts'); }
-  }, 1000);
+$('add').onclick = () => $('file').click();
+$('file').onchange = () => { addFiles([...$('file').files]); $('file').value = ''; };
+addEventListener('dragover', (e) => e.preventDefault());
+addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files.length) addFiles([...e.dataTransfer.files]); });
+
+/* ---- queue ---- */
+function enqueue(list) {
+  const cfg = { strength: val('strength'), speed: val('speed') };
+  list.forEach((i) => { if (i.state === 'ready') { i.state = 'queued'; i.cfg = cfg; queue.push(i); } });
+  render(); pump();
 }
-$('cancel').onclick = () => fetch('/api/cancel?id=' + jobId, { method: 'POST' });
-const reset = () => { if (jobId) fetch('/api/clear?id=' + jobId, { method: 'POST' }); jobId = null; $('file').value = ''; $('err').hidden = true; show('drop'); };
-$('reset').onclick = reset; $('again').onclick = reset;
-show('drop');
+async function pump() {
+  if (running || !queue.length) return;
+  const it = running = queue.shift();
+  const r = await api(`/api/start?id=${it.id}&strength=${it.cfg.strength}&speed=${it.cfg.speed}`, { method: 'POST' });
+  if (!r.ok) { it.state = 'error'; it.msg = (await r.json()).error; running = null; render(); return pump(); }
+  it.state = 'running'; it.progress = 0; render();
+  const tm = setInterval(async () => {
+    const d = await (await api('/api/job?id=' + it.id)).json();
+    it.progress = d.progress; it.eta = d.eta; it.encoder = d.encoder;
+    if (d.state === 'done') { clearInterval(tm); Object.assign(it, { state: 'done', result: d.result, secs: d.secs, ver: Date.now() }); running = null; if (sel === it) { tab = 'cmp'; } render(); pump(); }
+    else if (d.state === 'error' || d.state === 'cancelled') { clearInterval(tm); it.state = d.state === 'cancelled' ? 'ready' : 'error'; it.msg = d.error; running = null; if (d.state === 'error') toast(d.error); render(); pump(); }
+    else updateProgress(it);
+  }, 800);
+}
+function updateProgress(it) {
+  const p = Math.round(it.progress * 100);
+  const li = document.querySelector(`[data-k="${it.key}"] .mini i`); if (li) li.style.width = p + '%';
+  const st = document.querySelector(`[data-k="${it.key}"] .st`); if (st) st.textContent = `Processing ${p}%` + (it.eta ? ` · ${fmt(it.eta)} left` : '');
+  $('stxt').textContent = `Processing ${esc(it.name)}: ${p}%` + (it.eta ? ` · about ${fmt(it.eta)} left` : '') + (it.encoder ? ` · ${it.encoder}` : '');
+  $('spb').hidden = false; $('spi').style.width = p + '%';
+  const ib = $('ibp'); if (ib) ib.textContent = `Processing ${p}%`;
+}
+
+/* ---- rendering ---- */
+function stateText(i) {
+  if (i.state === 'running') return `Processing ${Math.round(i.progress * 100)}%`;
+  if (i.state === 'done') return `Done · ${(i.result.size / 1048576).toFixed(1)} MB`;
+  if (i.state === 'error') return i.msg || 'Error';
+  return { uploading: 'Uploading...', ready: 'Ready', queued: 'Queued' }[i.state];
+}
+function render() {
+  $('count').textContent = items.length;
+  $('list').innerHTML = items.length ? '' : '<div class="none">No videos yet.<br>Add videos or drop them anywhere in this window.</div>';
+  items.forEach((i) => {
+    const d = document.createElement('div'); d.className = 'item' + (i === sel ? ' sel' : ''); d.dataset.k = i.key;
+    d.innerHTML = `<div class="th">${i.id ? `<img src="${img(i, 'in', 'thumb')}" alt="">` : '...'}</div><div style="min-width:0"><div class="nm">${esc(i.name)}</div>` +
+      `<div class="mt">${i.info ? `${i.info.width}×${i.info.height} · ${fmt(i.info.duration)}` : ''}</div>` +
+      `<div class="st ${i.state === 'running' ? 'run' : i.state === 'error' ? 'err' : i.state === 'done' ? 'done' : ''}">${esc(stateText(i))}</div>` +
+      (i.state === 'running' ? `<div class="mini"><i style="width:${Math.round(i.progress * 100)}%"></i></div>` : '') + '</div>';
+    d.onclick = () => { sel = i; if (i.state !== 'done' && tab === 'cmp') tab = 'frame'; render(); };
+    $('list').appendChild(d);
+  });
+  const i = sel;
+  $('tCmp').disabled = !(i && i.state === 'done'); if ($('tCmp').disabled && tab === 'cmp') tab = 'frame';
+  $('tFrame').className = 'tab' + (tab === 'frame' ? ' on' : ''); $('tCmp').className = 'tab' + (tab === 'cmp' ? ' on' : '');
+  // inspector values
+  $('kSrc').textContent = i?.info ? `${i.info.width}×${i.info.height}` : '-'; $('kOut').textContent = i?.target ? `${i.target.width}×${i.target.height}` : '-';
+  $('kFps').textContent = i?.info ? `${i.info.fps.toFixed(0)} fps` : '-';
+  const ready = items.filter((x) => x.state === 'ready');
+  $('go').disabled = !(i && i.state === 'ready'); $('goAll').disabled = ready.length < 2; $('goAll').textContent = ready.length > 1 ? `Upscale all (${ready.length})` : 'Upscale all';
+  if (!running) { $('stxt').textContent = i ? `${items.length} video${items.length > 1 ? 's' : ''} in library` : 'Ready'; $('spb').hidden = true; }
+  renderStage();
+}
+function renderStage() {
+  const v = $('view'), i = sel, ib = $('infobar');
+  if (!i) {
+    v.innerHTML = '<div class="empty" id="emp"><div class="box"><h2>Drop videos here</h2><p>TikTok, Instagram or any video file</p><button class="tb pri" id="add2">Add videos</button><small>MP4, MOV, MKV, WebM &middot; up to 4 GB &middot; processed on this PC only</small></div></div>';
+    $('add2').onclick = () => $('file').click(); ib.innerHTML = '<span>No video selected</span>'; return;
+  }
+  if (!i.id) { v.innerHTML = '<div class="busy-t">Uploading...</div>'; ib.innerHTML = `<b>${esc(i.name)}</b>`; return; }
+  if (tab === 'cmp' && i.state === 'done') {
+    v.innerHTML = `<div class="cmp" id="cmp"><img src="${img(i, 'in', 'crop')}" alt=""><img class="top" src="${img(i, 'out', 'crop')}" alt=""><div class="ln"></div><div class="kn">&harr;</div>` +
+      `<span class="lab l">Plain upscale (bicubic)</span><span class="lab r">Reels4K</span></div>`;
+    const c = $('cmp'), top = c.querySelector('.top'), ln = c.querySelector('.ln'), kn = c.querySelector('.kn');
+    const set = (p) => { pct = Math.max(0, Math.min(100, p)); top.style.clipPath = `inset(0 0 0 ${pct}%)`; ln.style.left = `calc(${pct}% - 1px)`; kn.style.left = pct + '%'; };
+    set(pct);
+    const move = (e) => { const r = c.getBoundingClientRect(); set((e.clientX - r.left) / r.width * 100); };
+    c.onpointerdown = (e) => { c.setPointerCapture(e.pointerId); move(e); c.onpointermove = move; };
+    c.onpointerup = () => { c.onpointermove = null; };
+  } else v.innerHTML = `<img src="${img(i, 'in', 'full')}" alt="">`;
+  const dl = i.state === 'done' ? `<a class="tb pri" href="/api/download?id=${i.id}&t=${T}" style="text-decoration:none">Save 4K video</a>` : '';
+  const info = i.state === 'done' ? `<b>${i.result.width}×${i.result.height}</b> · ${(i.result.size / 1048576).toFixed(1)} MB · ${fmt(i.secs)} · ${esc(i.result.encoder)}` + (tab === 'cmp' ? ' · 100% crop from the centre of the frame' : '')
+    : i.state === 'running' ? `<b id="ibp">Processing ${Math.round(i.progress * 100)}%</b>` : `<b>${esc(i.name)}</b> · ${esc(stateText(i))}`;
+  ib.innerHTML = `<span>${info}</span><span class="sp"></span>${i.state === 'running' ? '<button class="tb" id="cnl">Cancel</button>' : ''}${dl}<button class="tb" id="rm">Remove</button>`;
+  $('rm').onclick = () => remove(i); if ($('cnl')) $('cnl').onclick = () => api('/api/cancel?id=' + i.id, { method: 'POST' });
+}
+function remove(i) {
+  if (i.state === 'running') return toast('Cancel the running job first');
+  queue = queue.filter((x) => x !== i); items = items.filter((x) => x !== i); if (i.id) api('/api/clear?id=' + i.id, { method: 'POST' });
+  sel = items[items.length - 1] || null; render();
+}
+$('tFrame').onclick = () => { tab = 'frame'; render(); };
+$('tCmp').onclick = () => { tab = 'cmp'; render(); };
+$('go').onclick = () => enqueue([sel]);
+$('goAll').onclick = () => enqueue(items);
+// remember settings between launches
+try {
+  const sv = JSON.parse(localStorage.getItem('reels4k.settings') || '{}');
+  for (const n of ['strength', 'speed']) { const r = document.querySelector('input[name=' + n + '][value="' + sv[n] + '"]'); if (r) r.checked = true; }
+} catch {}
+document.querySelectorAll('input[name=strength],input[name=speed]').forEach((r) => r.addEventListener('change', () => {
+  try { localStorage.setItem('reels4k.settings', JSON.stringify({ strength: val('strength'), speed: val('speed') })); } catch {}
+}));
+// keyboard shortcuts: Ctrl+O add, Enter upscale selected, Delete remove selected
+addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key.toLowerCase() === 'o') { e.preventDefault(); $('file').click(); }
+  else if (e.key === 'Enter' && !e.target.closest('button,a,label,input') && sel && sel.state === 'ready') enqueue([sel]);
+  else if (e.key === 'Delete' && sel && !e.target.closest('input')) remove(sel);
+});
+// tell the server the window is still open (it exits some time after the window is closed)
+const ping = () => api('/api/ping', { method: 'POST' }).catch(() => {}); ping(); setInterval(ping, 10000);
+render();
 </script>
 </body>
 </html>

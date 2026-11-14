@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Reels4K">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#232327"/><stop offset="1" stop-color="#0c0c0e"/></linearGradient>
+    <linearGradient id="or" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a2b"/><stop offset="1" stop-color="#ff5a00"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect x="3" y="3" width="506" height="506" rx="113" fill="none" stroke="#ffffff" stroke-opacity=".10" stroke-width="6"/>
+  <!-- viewfinder corners: the frame being enlarged -->
+  <g fill="none" stroke="url(#or)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M104 178V104h74"/><path d="M334 104h74v74"/><path d="M408 334v74h-74"/><path d="M178 408h-74v-74"/>
+  </g>
+  <!-- play triangle: pixels on the left dissolve into a smooth edge on the right = upscaling -->
+  <path d="M232 190v132l112-66z" fill="#ffffff"/>
+  <g fill="#ffffff">
+    <rect x="194" y="226" width="26" height="26" opacity=".85"/><rect x="194" y="260" width="26" height="26" opacity=".85"/>
+    <rect x="160" y="243" width="26" height="26" opacity=".5"/>
+    <rect x="128" y="243" width="22" height="22" opacity=".22" transform="translate(0 2)"/>
+  </g>
+</svg>

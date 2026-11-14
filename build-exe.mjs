@@ -47,7 +47,7 @@ const cfg = path.join(DIST, 'sea-config.json');
 const exe = path.join(DIST, 'Reels4K.exe');
 fs.writeFileSync(cfg, JSON.stringify({
   main: bundle, output: exe, disableExperimentalSEAWarning: true,
-  assets: { 'index.html': path.join(ROOT, 'public', 'index.html') },
+  assets: { 'index.html': path.join(ROOT, 'public', 'index.html'), 'logo.svg': path.join(ROOT, 'public', 'logo.svg') },
 }, null, 2));
 fs.rmSync(exe, { force: true });
 const r = spawnSync(process.execPath, ['--build-sea', cfg], { stdio: 'inherit' });

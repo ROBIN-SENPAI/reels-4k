@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 512" role="img" aria-label="Reels4K">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#232327"/><stop offset="1" stop-color="#0c0c0e"/></linearGradient>
+    <linearGradient id="or" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a2b"/><stop offset="1" stop-color="#ff5a00"/></linearGradient>
+  </defs>
+  <g>
+    <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+    <g fill="none" stroke="url(#or)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M104 178V104h74"/><path d="M334 104h74v74"/><path d="M408 334v74h-74"/><path d="M178 408h-74v-74"/>
+    </g>
+    <path d="M232 190v132l112-66z" fill="#fff"/>
+    <g fill="#fff"><rect x="194" y="226" width="26" height="26" opacity=".85"/><rect x="194" y="260" width="26" height="26" opacity=".85"/><rect x="160" y="243" width="26" height="26" opacity=".5"/><rect x="128" y="245" width="22" height="22" opacity=".22"/></g>
+  </g>
+  <text x="570" y="318" font-family="'Segoe UI Variable Display','Segoe UI',Inter,Arial,sans-serif" font-size="196" font-weight="700" letter-spacing="-7" fill="currentColor">Reels<tspan fill="#ff6a00">4K</tspan></text>
+  <text x="576" y="392" font-family="'Segoe UI Variable Text','Segoe UI',Inter,Arial,sans-serif" font-size="46" font-weight="500" letter-spacing="6" fill="currentColor" opacity=".55">VIDEO UPSCALER</text>
+</svg>
