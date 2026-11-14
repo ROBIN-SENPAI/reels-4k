@@ -4,7 +4,7 @@ Turn a TikTok / Instagram video into a cleaner, sharper **4K** file. Runs 100% o
 [FFmpeg](https://ffmpeg.org) — nothing is uploaded anywhere. Drag-and-drop web UI, or command line.
 Uses your GPU's hardware video encoder when it works (Intel Quick Sync, NVIDIA NVENC, AMD AMF).
 
-By **SENPAI ACADEMY - ROBIN**.
+By **ROBIN ABU IBRAHIM** (https://t.me/xFFBI) &mdash; **SENPAI ACADEMY** (https://t.me/xROB1N).
 
 ## Download (Windows)
 `Reels4K-windows-x64.zip` → `Reels4K.exe` (single file, no Node needed). FFmpeg is **not** bundled:
@@ -64,9 +64,9 @@ so the result *looks* crisper at a very small fidelity cost. That is the real st
 These numbers come from rendered game footage, not real phone video.
 
 ## Copyright mark
-Every output gets the credit **SENPAI ACADEMY - ROBIN** burned into the pixels (top-left, plus a faint copy bottom-right)
-and written into the file metadata. The credit is also shown in the app. It is checked in several places: the program
-refuses to run if the credit text is edited, and after encoding it verifies that the mark is really present in the video
+Every output gets two credit lines burned into the pixels (top-left: `ROBIN ABU IBRAHIM - T.ME/XFFBI`, faint bottom-right: `SENPAI ACADEMY - T.ME/XROB1N`)
+and written into the file metadata with the full links. The credit is also shown in the app. It is stored encrypted (AES-256-GCM) and signed (Ed25519, private key not in this repo) and is checked in several places: the program
+refuses to run if the credit data, signature or font is edited, and after encoding it verifies that the mark is really present in the video
 and discards the output if not.
 Be aware: nothing is *impossible* to remove. A burned-in mark can be cropped or painted over, metadata can be stripped,
 and anyone with the source can edit the code (the exe makes that much harder, but not impossible). The license forbids

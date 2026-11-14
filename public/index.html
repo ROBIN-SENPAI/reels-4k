@@ -35,7 +35,7 @@
   .msg { margin-top:12px; font-size:14px; color:#333 } .err { color:#c0392b; font-weight:600 } .ok { color:#111; font-weight:700 }
   .note { margin:18px 0 0; max-width:600px; font-size:13px; color:#a5a5a5 }
   footer { margin-top:auto; padding-top:26px; font-size:12px; letter-spacing:1.5px; color:#8a8a8a; text-align:center }
-  footer b { color:var(--orange) }
+  footer a { color:inherit; text-decoration:none } footer b { color:var(--orange) } footer span { opacity:.8 } footer a:hover b { text-decoration:underline }
   [hidden] { display:none !important }
 </style>
 </head>
@@ -70,7 +70,7 @@
   <div class="msg err" id="err" hidden></div>
 </main>
 <p class="note">Honest note: upscaling cannot add detail that was never recorded. You get smoother edges, crisper lines and a file that survives TikTok/Instagram re-compression better. A small copyright mark is added to every output video.</p>
-<footer>&copy; <b>{{CREDIT}}</b></footer>
+<footer>{{FOOTER}}</footer>
 <script>
 const $ = (id) => document.getElementById(id);
 let jobId = null, timer = null;

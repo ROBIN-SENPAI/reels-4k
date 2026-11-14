@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { upscale, STRENGTHS, SPEEDS } from './lib/upscale.mjs';
 import { detectEncoders, checkFfmpeg } from './lib/accel.mjs';
-import { CREDIT, APP_NAME, assertCredit } from './lib/credit.mjs';
+import { getCredit, APP_NAME, assertCredit } from './lib/credit.mjs';
 
 const USAGE = 'Usage: reels4k <video> [out.mp4] [--strength soft|normal|strong] [--speed turbo|balanced|max] [--no-gpu] [--force]';
 
@@ -36,7 +36,7 @@ export async function runCli(args) {
   if (fs.existsSync(output) && !force) fail(`Output exists: ${output} (use --force)`);
 
   try {
-    console.log(`${APP_NAME} by ${CREDIT}`);
+    console.log(`${APP_NAME} | ${getCredit().meta}`);
     const hw = gpu && opts.speed === 'turbo' ? (await detectEncoders())[0] : null;
     const t0 = Date.now();
     const job = upscale(input, output, { ...opts, hw, onProgress: (f) => process.stdout.write(`\r${(f * 100).toFixed(1)}%   `) });

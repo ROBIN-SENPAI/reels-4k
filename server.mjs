@@ -9,10 +9,13 @@ import { spawn } from 'node:child_process';
 import { pipeline } from 'node:stream/promises';
 import { upscale, probeVideo, planSize, STRENGTHS, SPEEDS } from './lib/upscale.mjs';
 import { detectEncoders, checkFfmpeg } from './lib/accel.mjs';
-import { CREDIT, APP_NAME, assertCredit } from './lib/credit.mjs';
+import { getCredit, APP_NAME, assertCredit } from './lib/credit.mjs';
 import { asset } from './lib/assets.mjs';
 
 const MAX_BYTES = 4 * 1024 ** 3;
+const esc = (t) => t.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+// Footer HTML built only from the verified credit.
+const footer = (c) => `&copy; ${[c.a, c.b].map((p) => `<a href="${esc(p.url)}" target="_blank" rel="noopener"><b>${esc(p.name)}</b></a> <span>${esc(p.url.replace(/^https?:\/\//, ''))}</span>`).join(' &nbsp;|&nbsp; ')}`;
 
 export function runServer({ open = false } = {}) {
   assertCredit();
@@ -41,7 +44,7 @@ export function runServer({ open = false } = {}) {
     try {
       if (req.method === 'GET' && url.pathname === '/') {
         assertCredit();
-        const html = asset('index.html').toString('utf8').replaceAll('{{CREDIT}}', CREDIT).replaceAll('{{APP}}', APP_NAME);
+        const html = asset('index.html').toString('utf8').replaceAll('{{FOOTER}}', footer(getCredit())).replaceAll('{{APP}}', APP_NAME);
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
         return res.end(html);
       }
@@ -121,7 +124,7 @@ export function runServer({ open = false } = {}) {
     else { console.error(e.message); process.exit(1); }
   });
   server.listen(PORT, '127.0.0.1', () => {
-    console.log(`${APP_NAME} by ${CREDIT}\nRunning at ${link}  (close this window or press Ctrl+C to stop)`);
+    console.log(`${APP_NAME} | ${getCredit().meta}\nRunning at ${link}  (close this window or press Ctrl+C to stop)`);
     if (!ffmpegVersion) console.log('WARNING: ffmpeg not found. Put ffmpeg.exe and ffprobe.exe next to this program or on PATH.');
     openBrowser();
   });

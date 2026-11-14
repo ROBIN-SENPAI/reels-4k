@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(ROOT, 'dist');
-const ORDER = ['lib/credit.mjs', 'lib/watermark.mjs', 'lib/accel.mjs', 'lib/assets.mjs', 'lib/upscale.mjs', 'cli.mjs', 'server.mjs', 'main.mjs'];
+const ORDER = ['lib/credit.data.mjs', 'lib/credit.mjs', 'lib/watermark.mjs', 'lib/accel.mjs', 'lib/assets.mjs', 'lib/upscale.mjs', 'cli.mjs', 'server.mjs', 'main.mjs'];
 
 const defaults = new Map();   // module -> default binding name
 const named = new Map();      // module -> Set of named bindings
