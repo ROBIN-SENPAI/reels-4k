@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reels4K — حوّل فيديوهاتك إلى 4K</title>
+<style>
+  :root { --bg:#0d0f14; --card:#171a22; --line:#2a2f3c; --fg:#eef0f5; --mut:#8c93a6; --acc:#ff3d6e; --acc2:#7a5cff; --ok:#2ecc8f; }
+  @media (prefers-color-scheme: light) { :root { --bg:#f4f5f9; --card:#fff; --line:#dfe2ea; --fg:#14161c; --mut:#667; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 system-ui,"Segoe UI",Tahoma,sans-serif; min-height:100vh; display:grid; place-items:center; padding:16px }
+  main { width:100%; max-width:560px }
+  h1 { margin:0 0 4px; font-size:28px; background:linear-gradient(90deg,var(--acc),var(--acc2)); -webkit-background-clip:text; background-clip:text; color:transparent }
+  p.sub { margin:0 0 20px; color:var(--mut) }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px }
+  #drop { border:2px dashed var(--line); border-radius:14px; padding:40px 16px; text-align:center; cursor:pointer; transition:.15s }
+  #drop.over { border-color:var(--acc); background:rgba(255,61,110,.07) }
+  #drop b { display:block; font-size:18px; margin-bottom:4px }
+  .row { display:flex; gap:12px; margin-top:16px; flex-wrap:wrap }
+  .row label { flex:1; min-width:150px; font-size:14px; color:var(--mut) }
+  select { width:100%; margin-top:4px; padding:10px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--fg); font:inherit }
+  button { width:100%; margin-top:16px; padding:14px; border:0; border-radius:12px; font:inherit; font-weight:700; color:#fff; cursor:pointer; background:linear-gradient(90deg,var(--acc),var(--acc2)) }
+  button.sec { background:transparent; border:1px solid var(--line); color:var(--fg) }
+  button:disabled { opacity:.5; cursor:default }
+  .info { margin-top:14px; font-size:14px; color:var(--mut); direction:ltr; text-align:center }
+  .bar { height:10px; background:var(--line); border-radius:99px; overflow:hidden; margin-top:16px }
+  .bar i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--acc),var(--acc2)); transition:width .4s }
+  .msg { margin-top:12px; font-size:14px } .err { color:#ff6b6b } .ok { color:var(--ok) }
+  .note { margin-top:18px; font-size:13px; color:var(--mut) }
+  [hidden] { display:none !important }
+</style>
+</head>
+<body>
+<main>
+  <h1>Reels4K</h1>
+  <p class="sub">ضع فيديو تيك توك أو انستا واحصل على نسخة 4K أنظف وأحدّ. كل شيء يتم على جهازك.</p>
+  <div class="card">
+    <div id="drop" tabindex="0"><b>اسحب الفيديو هنا</b>أو اضغط للاختيار (MP4, MOV, ...)
+      <input id="file" type="file" accept="video/*" hidden></div>
+    <div id="opts" hidden>
+      <div class="info" id="info"></div>
+      <div class="row">
+        <label>الحدّة<select id="strength"><option value="soft">خفيفة</option><option value="normal" selected>متوسطة</option><option value="strong">قوية</option></select></label>
+        <label>الجودة / السرعة<select id="quality"><option value="fast">سريع</option><option value="balanced" selected>متوازن</option><option value="best">أفضل جودة (أبطأ)</option></select></label>
+      </div>
+      <button id="go">حوّل إلى 4K</button>
+      <button id="reset" class="sec">فيديو آخر</button>
+    </div>
+    <div id="prog" hidden>
+      <div class="bar"><i id="fill"></i></div>
+      <div class="msg" id="pmsg">…</div>
+      <button id="cancel" class="sec">إلغاء</button>
+    </div>
+    <div id="result" hidden>
+      <div class="msg ok" id="rmsg"></div>
+      <a id="dl"><button>تحميل الفيديو 4K</button></a>
+      <button id="again" class="sec">فيديو آخر</button>
+    </div>
+    <div class="msg err" id="err" hidden></div>
+  </div>
+  <p class="note">ملاحظة: التكبير لا يضيف تفاصيل لم تكن موجودة، لكنه يعطي حواف أنعم ووضوحاً أفضل، وتيك توك/انستا يضغطان الفيديو 4K بجودة أعلى من 1080p. المعالجة تستغرق وقتاً على الأجهزة الضعيفة.</p>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let jobId = null, timer = null;
+const show = (...ids) => ['drop','opts','prog','result'].forEach((x) => $(x).hidden = !ids.includes(x));
+const fail = (m) => { $('err').textContent = m; $('err').hidden = false; };
+const fmt = (s) => s >= 60 ? `${Math.floor(s/60)} د ${Math.round(s%60)} ث` : `${Math.round(s)} ث`;
+
+$('drop').onclick = () => $('file').click();
+$('drop').onkeydown = (e) => { if (e.key === 'Enter') $('file').click(); };
+$('file').onchange = () => $('file').files[0] && upload($('file').files[0]);
+['dragover','dragenter'].forEach((t) => $('drop').addEventListener(t, (e) => { e.preventDefault(); $('drop').classList.add('over'); }));
+['dragleave','drop'].forEach((t) => $('drop').addEventListener(t, (e) => { e.preventDefault(); $('drop').classList.remove('over'); }));
+$('drop').addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f) upload(f); });
+
+async function upload(f) {
+  $('err').hidden = true; $('drop').firstChild.textContent = 'جاري الرفع…';
+  try {
+    const r = await fetch('/api/upload?name=' + encodeURIComponent(f.name), { method: 'PUT', body: f });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    jobId = d.id;
+    const i = d.info;
+    $('info').textContent = `${i.width}×${i.height} @ ${i.fps.toFixed(0)}fps  →  ${d.target.width}×${d.target.height}` + (i.hdr ? '  (HDR → SDR)' : '');
+    if (d.tooBig) { fail('الفيديو بدقة عالية أصلاً، لا حاجة لتكبيره.'); $('go').disabled = true; } else $('go').disabled = false;
+    show('opts');
+  } catch (e) { fail(e.message); }
+  $('drop').firstChild.textContent = 'اسحب الفيديو هنا';
+}
+$('go').onclick = async () => {
+  $('err').hidden = true;
+  const q = `id=${jobId}&strength=${$('strength').value}&quality=${$('quality').value}`;
+  const r = await fetch('/api/start?' + q, { method: 'POST' });
+  if (!r.ok) return fail((await r.json()).error);
+  show('prog'); poll();
+};
+function poll() {
+  clearInterval(timer);
+  timer = setInterval(async () => {
+    const d = await (await fetch('/api/job?id=' + jobId)).json();
+    $('fill').style.width = (d.progress * 100).toFixed(1) + '%';
+    $('pmsg').textContent = `${(d.progress * 100).toFixed(0)}%` + (d.eta ? ` — المتبقي تقريباً ${fmt(d.eta)}` : '');
+    if (d.state === 'done') {
+      clearInterval(timer);
+      $('rmsg').textContent = `تم! ${d.result.width}×${d.result.height} — ${(d.result.size/1048576).toFixed(1)} MB — استغرق ${fmt(d.secs)}`;
+      $('dl').href = '/api/download?id=' + jobId; show('result');
+    } else if (d.state === 'error' || d.state === 'cancelled') { clearInterval(timer); fail(d.error); show('opts'); }
+  }, 1000);
+}
+$('cancel').onclick = () => fetch('/api/cancel?id=' + jobId, { method: 'POST' });
+const reset = () => { if (jobId) fetch('/api/clear?id=' + jobId, { method: 'POST' }); jobId = null; $('file').value = ''; $('err').hidden = true; show('drop'); };
+$('reset').onclick = reset; $('again').onclick = reset;
+show('drop');
+</script>
+</body>
+</html>
