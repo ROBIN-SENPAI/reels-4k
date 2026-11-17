@@ -35,7 +35,7 @@ Optional. Real-ESRGAN runs on a free Kaggle GPU through the official `kaggle` CL
 The app uploads the video as a **private** dataset on **your** Kaggle account, runs a private GPU notebook, downloads the result, adds the copyright mark locally and deletes the dataset and notebook again.
 - It uses your weekly Kaggle GPU quota and needs internet enabled for Kaggle notebooks (account verification may be required by Kaggle).
 - Your video leaves your PC for Kaggle. Check Kaggle's terms before using it for other people's videos.
-- Status: tested on a real Kaggle account with a 2-second 540x960 test clip (about 90 s in total, including Kaggle start-up; 60 frames in, 2160x3840 out, dataset and notebook deleted afterwards). Not yet tested on long or real-world videos; speed per frame has not been measured.
+- Status: tested on a real Kaggle account. A 6 s 1080p 60 fps game clip (360 frames) took 171 s of GPU work on 2x Tesla T4 (2.1 fps; the first version, one GPU, ran at 1.0 fps). On top of that Kaggle may keep the job waiting in its queue for a GPU: it took about 15 minutes once and about 20 seconds another time. At roughly 2 fps this mode is only practical for short clips. Quality: crisper text and lines than the local mode, but smoother, more painterly grass and foliage. Not yet tested on faces or phone footage.
 
 ## What it does
 | Input | Output |
