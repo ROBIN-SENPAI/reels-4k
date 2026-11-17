@@ -30,6 +30,13 @@ Output defaults to `<name>-4k.mp4` next to the input; the input is never overwri
 - **Settings** (right): sharpness and encoding mode (remembered between launches). `Enter` = upscale, `Delete` = remove.
 - Brand assets (SVG/PNG logo) are in `brand/`.
 
+## Cloud GPU mode (Kaggle, beta)
+Optional. Real-ESRGAN runs on a free Kaggle GPU through the official `kaggle` CLI (`pip install kaggle`, signed in with your own API token in `~/.kaggle`).
+The app uploads the video as a **private** dataset on **your** Kaggle account, runs a private GPU notebook, downloads the result, adds the copyright mark locally and deletes the dataset and notebook again.
+- It uses your weekly Kaggle GPU quota and needs internet enabled for Kaggle notebooks (account verification may be required by Kaggle).
+- Your video leaves your PC for Kaggle. Check Kaggle's terms before using it for other people's videos.
+- Status: the local orchestration is tested with a fake Kaggle CLI; the real Kaggle notebook (Real-ESRGAN via `spandrel`) still needs a real run to be confirmed. Speed on Kaggle has not been measured.
+
 ## What it does
 | Input | Output |
 |---|---|

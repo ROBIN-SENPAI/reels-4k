@@ -12,6 +12,7 @@ import { upscale, probeVideo, planSize, STRENGTHS, SPEEDS, HDR_TONEMAP } from '.
 import { detectEncoders, checkFfmpeg, tool } from './lib/accel.mjs';
 import { getCredit, APP_NAME, VERSION, assertCredit } from './lib/credit.mjs';
 import { asset } from './lib/assets.mjs';
+import { cloudCaps, prepareForCloud, runCloud } from './lib/cloud.mjs';
 
 const MAX_BYTES = 4 * 1024 ** 3;
 const esc = (t) => t.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
@@ -47,6 +48,9 @@ export function runServer({ open = false } = {}) {
   let encoders = [];                  // verified GPU encoders (filled in the background at start)
   const detecting = ffmpegVersion ? detectEncoders().then((e) => { encoders = e; }).catch(() => {}) : Promise.resolve();
 
+  let cloud = { available: false, reason: 'Checking Kaggle...' };   // Kaggle CLI + sign-in check (background)
+  cloudCaps().then((c) => { cloud = c; }).catch((e) => { cloud = { available: false, reason: e.message }; });
+
   const jobs = new Map();             // id -> { dir, input, name, info, state, progress, error, output, abort }
   let lastPing = 0;                   // the UI pings while its window is open; the app exits some time after the window is closed
   let busy = null;                    // only one encode at a time: it is heavy on a laptop
@@ -69,6 +73,30 @@ export function runServer({ open = false } = {}) {
     res.on('close', () => p.kill());
   }
   const target = (j) => planSize(j.info.width, j.info.height);
+
+  // Cloud job: prepare locally -> Kaggle GPU (Real-ESRGAN) -> download -> add the copyright mark locally.
+  function startCloud(j, strength) {
+    if (!cloud.available) { j.state = 'error'; j.error = cloud.reason || 'Cloud mode is not available.'; return; }
+    busy = j; j.encoder = 'Kaggle GPU (Real-ESRGAN)'; j.phase = 'Preparing the video';
+    (async () => {
+      try {
+        const size = planSize(j.info.width, j.info.height);
+        const prepared = path.join(j.dir, 'prepared.mp4');
+        await prepareForCloud(j.input, prepared, j.info, j.abort.signal, (f) => { j.progress = 0.08 * f; });
+        const cloudVideo = await runCloud({ bin: cloud.bin, user: cloud.user, preparedVideo: prepared, outW: size.width, outH: size.height,
+          workDir: j.dir, signal: j.abort.signal, onPhase: (t, f) => { j.phase = t; j.progress = f; } });
+        j.phase = 'Adding the copyright mark and encoding';
+        const job = upscale(j.input, j.output, { strength, speed: 'turbo', hw: encoders[0] || null, cloudVideo, signal: j.abort.signal, onProgress: (f) => { j.progress = 0.9 + 0.1 * f; } });
+        const r = await job.done;
+        r.encoder = 'Kaggle GPU + ' + job.encoder;
+        j.state = 'done'; j.result = r; j.progress = 1; j.secs = (Date.now() - j.t0) / 1000;
+      } catch (e) { j.state = j.abort.signal.aborted ? 'cancelled' : 'error'; j.error = e.message; }
+      finally {
+        busy = null; j.phase = null;
+        for (const d of ['prepared.mp4', 'k-data', 'k-kernel', 'k-out']) fs.rmSync(path.join(j.dir, d), { recursive: true, force: true });
+      }
+    })();
+  }
 
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
@@ -95,7 +123,7 @@ export function runServer({ open = false } = {}) {
       if (req.method === 'POST' && url.pathname === '/api/ping') { lastPing = Date.now(); return json(res, 200, { ok: true }); }
       if (req.method === 'GET' && url.pathname === '/api/caps') {
         await detecting;
-        return json(res, 200, { ffmpeg: ffmpegVersion, gpu: encoders.map((e) => e.name), threads: os.cpus().length });
+        return json(res, 200, { ffmpeg: ffmpegVersion, gpu: encoders.map((e) => e.name), threads: os.cpus().length, cloud: { available: !!cloud.available, user: cloud.user || null, reason: cloud.reason || null } });
       }
       if (req.method === 'PUT' && url.pathname === '/api/upload') {
         if (!ffmpegVersion) return json(res, 500, { error: 'ffmpeg was not found. Put ffmpeg.exe and ffprobe.exe next to this program or install them on PATH.' });
@@ -124,10 +152,12 @@ export function runServer({ open = false } = {}) {
         if (busy) return json(res, 409, { error: 'Another video is being processed. Wait for it to finish.' });
         const q = url.searchParams;
         const strength = STRENGTHS[q.get('strength')] ? q.get('strength') : 'normal';
+        const wantCloud = q.get('speed') === 'cloud';
         const speed = SPEEDS[q.get('speed')] ? q.get('speed') : 'turbo';
         j.abort = new AbortController();
         j.output = path.join(j.dir, 'output-4k.mp4');
         j.state = 'running'; j.progress = 0; j.error = null; j.t0 = Date.now();
+        if (wantCloud) { startCloud(j, strength); return json(res, 200, { ok: true }); }
         try {
           const job = upscale(j.input, j.output, { strength, speed, hw: encoders[0] || null, signal: j.abort.signal, onProgress: (f) => { j.progress = f; } });
           j.encoder = job.encoder;
@@ -146,8 +176,8 @@ export function runServer({ open = false } = {}) {
         const j = jobs.get(url.searchParams.get('id'));
         if (!j) return json(res, 404, { error: 'unknown id' });
         const elapsed = j.t0 ? (Date.now() - j.t0) / 1000 : 0;
-        return json(res, 200, { state: j.state, progress: j.progress, error: j.error, result: j.result, secs: j.secs, encoder: j.encoder,
-          eta: j.state === 'running' && j.progress > 0.05 ? elapsed * (1 - j.progress) / j.progress : null });
+        return json(res, 200, { state: j.state, progress: j.progress, error: j.error, result: j.result, secs: j.secs, encoder: j.encoder, phase: j.phase || null,
+          eta: j.state === 'running' && !j.phase && j.progress > 0.05 ? elapsed * (1 - j.progress) / j.progress : null });
       }
       if (req.method === 'GET' && url.pathname === '/api/download') {
         const id = url.searchParams.get('id');

@@ -109,6 +109,8 @@
   .status i { display:inline-block; width:1px; height:11px; background:var(--line2); margin:0 10px; vertical-align:-1px }
   .status .pb { width:140px; height:4px; background:var(--line); border-radius:2px; overflow:hidden } .status .pb i { display:block; width:0; height:100%; margin:0; background:var(--acc); transition:width .4s }
   .toast { position:absolute; left:50%; top:12px; transform:translateX(-50%); max-width:80%; padding:8px 14px; border-radius:6px; background:var(--panel); border:1px solid var(--err); color:var(--err); font-weight:600; z-index:5 }
+  .beta { font-style:normal; font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; background:var(--acc); color:#fff; vertical-align:1px }
+  .opt:has(input:disabled) { opacity:.55; cursor:default }
   [hidden] { display:none !important }
   @media (max-width:900px) { .body { grid-template-columns:200px 1fr 250px } }
 </style>
@@ -154,6 +156,7 @@
           <label class="opt"><input type="radio" name="speed" value="turbo" checked><span><b>Turbo</b><small id="turboDesc">GPU encoder when available</small></span></label>
           <label class="opt"><input type="radio" name="speed" value="balanced"><span><b>Balanced</b><small>CPU, smaller files</small></span></label>
           <label class="opt"><input type="radio" name="speed" value="max"><span><b>Max quality</b><small>CPU, slowest, best per MB</small></span></label>
+          <label class="opt" id="optCloud"><input type="radio" name="speed" value="cloud" disabled><span><b>Cloud GPU (Kaggle) <em class="beta">AI</em></b><small id="cloudDesc">Checking Kaggle...</small></span></label>
         </div>
         <div class="sec"><p class="note">Upscaling cannot add detail that was never recorded: it gives smoother edges and crisper lines. A copyright mark is added to every output video.</p></div>
       </div>
@@ -187,6 +190,9 @@ api('/api/caps').then((r) => r.json()).then((c) => {
   gpu = c.gpu[0] || null;
   $('gpu').classList.toggle('on', !!gpu); $('gput').innerHTML = gpu ? `Encoder: <b>${esc(gpu)}</b>` : 'Encoder: <b>CPU</b>';
   $('turboDesc').textContent = gpu ? `GPU encoder (${gpu})` : 'No GPU encoder found: uses the CPU';
+  const cl = c.cloud || {};
+  $('optCloud').querySelector('input').disabled = !cl.available;
+  $('cloudDesc').textContent = cl.available ? `Real-ESRGAN on your Kaggle account (${cl.user}). Uploads this video (private).` : (cl.reason || 'Not available');
   if (!c.ffmpeg) toast('ffmpeg was not found. Put ffmpeg.exe and ffprobe.exe next to this program or install them.');
 });
 
@@ -213,6 +219,10 @@ addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files.l
 /* ---- queue ---- */
 function enqueue(list) {
   const cfg = { strength: val('strength'), speed: val('speed') };
+  if (cfg.speed === 'cloud' && !localStorage.getItem('reels4k.cloudOk')) {
+    if (!confirm('Cloud GPU mode uploads your video to YOUR Kaggle account as a private dataset, processes it there, downloads the result and deletes it from Kaggle again. It uses your weekly Kaggle GPU quota. Continue?')) return;
+    try { localStorage.setItem('reels4k.cloudOk', '1'); } catch {}
+  }
   list.forEach((i) => { if (i.state === 'ready') { i.state = 'queued'; i.cfg = cfg; queue.push(i); } });
   render(); pump();
 }
@@ -224,7 +234,7 @@ async function pump() {
   it.state = 'running'; it.progress = 0; render();
   const tm = setInterval(async () => {
     const d = await (await api('/api/job?id=' + it.id)).json();
-    it.progress = d.progress; it.eta = d.eta; it.encoder = d.encoder;
+    it.progress = d.progress; it.eta = d.eta; it.encoder = d.encoder; it.phase = d.phase;
     if (d.state === 'done') { clearInterval(tm); Object.assign(it, { state: 'done', result: d.result, secs: d.secs, ver: Date.now() }); running = null; if (sel === it) { tab = 'cmp'; } render(); pump(); }
     else if (d.state === 'error' || d.state === 'cancelled') { clearInterval(tm); it.state = d.state === 'cancelled' ? 'ready' : 'error'; it.msg = d.error; running = null; if (d.state === 'error') toast(d.error); render(); pump(); }
     else updateProgress(it);
@@ -233,10 +243,10 @@ async function pump() {
 function updateProgress(it) {
   const p = Math.round(it.progress * 100);
   const li = document.querySelector(`[data-k="${it.key}"] .mini i`); if (li) li.style.width = p + '%';
-  const st = document.querySelector(`[data-k="${it.key}"] .st`); if (st) st.textContent = `Processing ${p}%` + (it.eta ? ` · ${fmt(it.eta)} left` : '');
-  $('stxt').textContent = `Processing ${esc(it.name)}: ${p}%` + (it.eta ? ` · about ${fmt(it.eta)} left` : '') + (it.encoder ? ` · ${it.encoder}` : '');
+  const st = document.querySelector(`[data-k="${it.key}"] .st`); if (st) st.textContent = it.phase || (`Processing ${p}%` + (it.eta ? ` · ${fmt(it.eta)} left` : ''));
+  $('stxt').textContent = it.phase ? `${esc(it.name)}: ${esc(it.phase)}` : `Processing ${esc(it.name)}: ${p}%` + (it.eta ? ` · about ${fmt(it.eta)} left` : '') + (it.encoder ? ` · ${it.encoder}` : '');
   $('spb').hidden = false; $('spi').style.width = p + '%';
-  const ib = $('ibp'); if (ib) ib.textContent = `Processing ${p}%`;
+  const ib = $('ibp'); if (ib) ib.textContent = it.phase || `Processing ${p}%`;
 }
 
 /* ---- rendering ---- */
