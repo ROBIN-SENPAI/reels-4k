@@ -1,4 +1,4 @@
-// Cloud flow with a FAKE kaggle CLI (test/fake-kaggle.cjs): no real Kaggle account is touched.
+// Cloud flow with a FAKE kaggle CLI (testkit/fake-kaggle.cjs): no real Kaggle account is touched.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { cloudCaps, prepareForCloud, runCloud } from '../lib/cloud.mjs';
 import { probeVideo, upscale, planSize } from '../lib/upscale.mjs';
 
-const fake = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fake-kaggle.cjs');
+const fake = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'testkit', 'fake-kaggle.cjs');
 
 test('cloud flow end to end with a fake kaggle CLI', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'r4k-cloud-'));
@@ -27,7 +27,7 @@ test('cloud flow end to end with a fake kaggle CLI', async () => {
   const out = path.join(dir, 'out.mp4');
   await upscale(src, out, { speed: 'balanced', cloudVideo }).done;
   const o = probeVideo(out);
-  assert.equal(o.width, 1080); assert.equal(o.height, 1920); assert.ok(o.hasAudio);
+  assert.equal(o.width, 2160); assert.equal(o.height, 3840); assert.ok(o.hasAudio);
   const calls = fs.readFileSync(path.join(dir, 'state', 'calls.log'), 'utf8');
   assert.match(calls, /kernels delete/); assert.match(calls, /datasets delete/);   // remote cleanup happened
   fs.rmSync(dir, { recursive: true, force: true });
