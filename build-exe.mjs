@@ -25,7 +25,7 @@ for (const f of ORDER) {
       else defaults.set(imp[2], spec);
       continue;
     }
-    if (/^import /.test(line)) throw new Error(`Unsupported import syntax in ${f}: ${line}`);
+    if (/^import .+ from ['"]/.test(line)) throw new Error(`Unsupported import syntax in ${f}: ${line}`);
     out.push(line.replace(/^export (async function|function|const|let|class)/, '$1').replaceAll('import.meta.url', "'file:///'"));
   }
   bodies.push(`// ---- ${f} ----\n${out.join('\n')}`);
