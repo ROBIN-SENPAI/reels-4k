@@ -35,7 +35,7 @@ Optional. Real-ESRGAN runs on a free Kaggle GPU through the official `kaggle` CL
 The app uploads the video as a **private** dataset on **your** Kaggle account, runs a private GPU notebook, downloads the result, adds the copyright mark locally and deletes the dataset and notebook again.
 - It uses your weekly Kaggle GPU quota and needs internet enabled for Kaggle notebooks (account verification may be required by Kaggle).
 - Your video leaves your PC for Kaggle. Check Kaggle's terms before using it for other people's videos.
-- Status: the local orchestration is tested with a fake Kaggle CLI; the real Kaggle notebook (Real-ESRGAN via `spandrel`) still needs a real run to be confirmed. Speed on Kaggle has not been measured.
+- Status: tested on a real Kaggle account with a 2-second 540x960 test clip (about 90 s in total, including Kaggle start-up; 60 frames in, 2160x3840 out, dataset and notebook deleted afterwards). Not yet tested on long or real-world videos; speed per frame has not been measured.
 
 ## What it does
 | Input | Output |
