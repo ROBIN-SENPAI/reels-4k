@@ -18,7 +18,7 @@ Node.js 18+ and FFmpeg on `PATH`; no npm packages.
 ```bash
 node main.mjs                      # app window (server at http://localhost:4400)  (Windows: start.bat)
 node main.mjs video.mp4            # command line
-node --test test/                  # tests (needs ffmpeg)
+node --test                          # tests (needs ffmpeg)
 node build-exe.mjs                 # builds dist/Reels4K.exe (needs Node 25.5+ for --build-sea)
 ```
 CLI options: `[out.mp4] [--strength soft|normal|strong] [--speed turbo|balanced|max] [--no-gpu] [--force]`.
